@@ -28,7 +28,7 @@
 ## Project Status
 
 > [!WARNING]
-> Please note that this project is in low-maintenance mode. For more details on what this means in practice, please see [issue #53](https://github.com/shanesveller/nix-beam-flakes/issues/53).
+> This is a maintained fork of [shanesveller/nix-beam-flakes](https://github.com/shanesveller/nix-beam-flakes). See [issue #53](https://github.com/shanesveller/nix-beam-flakes/issues/53) on the original repo. If the original returns to maintenance, I will deprecate this fork.
 
 ## Requirements
 
