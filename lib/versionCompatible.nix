@@ -2,154 +2,45 @@
   lib,
   normalizeElixir,
 }: elixir: erlang: let
-  inherit (builtins) concatStringsSep length map splitVersion toString;
-  inherit (lib.lists) findFirst;
-  inherit (lib.strings) versionAtLeast versionOlder;
-
-  # max is exclusive, range is [)
-  # https://hexdocs.pm/elixir/main/compatibility-and-deprecations.html
-  # https://hexdocs.pm/elixir/main/compatibility-and-deprecations.html#compatibility-between-elixir-and-erlang-otp
+  # Stable Elixir 1.20.4 compatibility table, including patch-level additions:
+  # https://github.com/elixir-lang/elixir/blob/v1.20.4/lib/elixir/pages/references/compatibility-and-deprecations.md
+  # Each row is [inclusive Elixir minimum, exclusive maximum, OTP min, OTP max].
   bounds = [
-    # 1.15.0-dev
-    {
-      min_erl = "24.0.0";
-      max_erl = "27.0.0";
-      min_el = "1.15.0";
-      max_el = "1.16.0";
-    }
-    {
-      min_erl = "23.0.0";
-      max_erl = "26.0.0";
-      min_el = "1.14.0";
-      max_el = "1.15.0";
-    }
-    {
-      min_erl = "22.0.0";
-      max_erl = "25.0.0";
-      min_el = "1.12.0";
-      max_el = "1.14.0";
-    }
-    {
-      min_erl = "22.0.0";
-      max_erl = "25.0.0";
-      min_el = "1.12.0";
-      max_el = "1.14.0";
-    }
-    {
-      min_erl = "21.0.0";
-      max_erl = "25.0.0";
-      min_el = "1.11.4";
-      max_el = "1.12.0";
-    }
-    {
-      min_erl = "21.0.0";
-      max_erl = "24.0.0";
-      min_el = "1.11.0";
-      max_el = "1.11.3";
-    }
-    {
-      min_erl = "21.0.0";
-      max_erl = "24.0.0";
-      min_el = "1.10.3";
-      max_el = "1.11.0";
-    }
-    {
-      min_erl = "21.0.0";
-      max_erl = "23.0.0";
-      min_el = "1.10.0";
-      max_el = "1.10.3";
-    }
-    {
-      min_erl = "20.0.0";
-      max_erl = "23.0.0";
-      min_el = "1.8.0";
-      max_el = "1.10.0";
-    }
-    {
-      min_erl = "19.0.0";
-      max_erl = "23.0.0";
-      min_el = "1.7.0";
-      max_el = "1.8.0";
-    }
-    {
-      min_erl = "19.0.0";
-      max_erl = "22.0.0";
-      min_el = "1.6.6";
-      max_el = "1.7.0";
-    }
-    {
-      min_erl = "19.0.0";
-      max_erl = "21.0.0";
-      min_el = "1.6.0";
-      max_el = "1.7.0";
-    }
-    {
-      min_erl = "18.0.0";
-      max_erl = "21.0.0";
-      min_el = "1.5.0";
-      max_el = "1.6.0";
-    }
-    {
-      min_erl = "18.0.0";
-      max_erl = "21.0.0";
-      min_el = "1.4.5";
-      max_el = "1.5.0";
-    }
-    {
-      min_erl = "18.0.0";
-      max_erl = "20.0.0";
-      min_el = "1.4.0";
-      max_el = "1.5.0";
-    }
-    {
-      min_erl = "18.0.0";
-      max_erl = "20.0.0";
-      min_el = "1.3.0";
-      max_el = "1.4.0";
-    }
-    {
-      min_erl = "18.0.0";
-      max_erl = "19.0.0";
-      min_el = "1.2.0";
-      max_el = "1.3.0";
-    }
-    {
-      min_erl = "17.0.0";
-      max_erl = "19.0.0";
-      min_el = "1.1.0";
-      max_el = "1.2.0";
-    }
-    {
-      min_erl = "17.0.0";
-      max_erl = "19.0.0";
-      min_el = "1.0.5";
-      max_el = "1.1.0";
-    }
-    {
-      min_erl = "17.0.0";
-      max_erl = "18.0.0";
-      min_el = "1.0.0";
-      max_el = "1.1.0";
-    }
+    ["1.20.0" "1.21.0" "27" "30"]
+    ["1.19.0" "1.20.0" "26" "29"]
+    ["1.17.0" "1.19.0" "25" "28"]
+    ["1.15.0" "1.17.0" "24" "27"]
+    ["1.14.5" "1.15.0" "23" "27"]
+    ["1.14.0" "1.14.5" "23" "26"]
+    ["1.13.4" "1.14.0" "22" "26"]
+    ["1.12.0" "1.13.4" "22" "25"]
+    ["1.11.4" "1.12.0" "21" "25"]
+    ["1.11.0" "1.11.4" "21" "24"]
+    ["1.10.3" "1.11.0" "21" "24"]
+    ["1.10.0" "1.10.3" "21" "23"]
+    ["1.8.0" "1.10.0" "20" "23"]
+    ["1.7.0" "1.8.0" "19" "23"]
+    ["1.6.6" "1.7.0" "19" "22"]
+    ["1.6.0" "1.6.6" "19" "21"]
+    ["1.5.0" "1.6.0" "18" "21"]
+    ["1.4.5" "1.5.0" "18" "21"]
+    ["1.3.0" "1.4.5" "18" "20"]
+    ["1.2.6" "1.3.0" "18" "20"]
+    ["1.2.0" "1.2.6" "18" "19"]
+    ["1.1.0" "1.2.0" "17" "19"]
+    ["1.0.5" "1.1.0" "17" "19"]
+    ["1.0.0" "1.0.5" "17" "18"]
   ];
-
-  normalizeOtp = version: let
-    split = splitVersion version;
-    padded =
-      if (length split) < 3
-      then split ++ [0]
-      else split;
-  in
-    concatStringsSep "." (map toString padded);
-
-  elixir' = normalizeElixir elixir;
-  erlang' = normalizeOtp erlang;
-  pred = bound:
-    builtins.all (val: val) [
-      (versionOlder erlang' bound.max_erl)
-      (versionOlder elixir' bound.max_el)
-      (versionAtLeast erlang' bound.min_erl)
-      (versionAtLeast elixir' bound.min_el)
-    ];
+  el = normalizeElixir elixir;
+  # Compare OTP majors; patch/minor releases stay within each documented major.
+  otp = lib.versions.major erlang;
+  at = builtins.elemAt;
 in
-  builtins.isAttrs (findFirst pred false bounds)
+  builtins.any (
+    b:
+      lib.versionAtLeast el (at b 0)
+      && lib.versionOlder el (at b 1)
+      && lib.versionAtLeast otp (at b 2)
+      && lib.versionOlder otp (at b 3)
+  )
+  bounds

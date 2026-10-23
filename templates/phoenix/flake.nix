@@ -3,12 +3,12 @@
 
   inputs = {
     beam-flakes = {
-      url = "github:shanesveller/nix-beam-flakes";
+      url = "github:cigrainger/nix-beam-flakes/develop";
       inputs.flake-parts.follows = "flake-parts";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-parts.url = "github:hercules-ci/flake-parts";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
   };
 
   outputs = inputs @ {
@@ -30,8 +30,8 @@
             phoenix = true;
           };
           versions = {
-            elixir = "1.16.2";
-            erlang = "26.2.3";
+            elixir = "1.20.1";
+            erlang = "29.0.2";
           };
         };
       };

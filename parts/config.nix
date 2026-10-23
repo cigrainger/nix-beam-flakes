@@ -54,12 +54,12 @@ in {
                 optional suffix such as "-otp-24" may be present, but will have no effect.
               '';
               example = "1.14.2";
-              type = types.nullOr (types.strMatching "^([0-9]+)\.([0-9]+)\.([0-9]+)(-otp-[0-9]+)?$");
+              type = types.nullOr (types.strMatching "^[0-9]+\\.[0-9]+\\.[0-9]+(-otp-[0-9]+)?$");
             };
             erlang = mkOption {
               description = "Textual version of Erlang/OTP to use";
               example = "25.2";
-              type = types.nullOr (types.strMatching "^([0-9]+)\.([0-9]+)(\.([0-9]+))?(\.([0-9+]))?$");
+              type = types.nullOr (types.strMatching "^[0-9]+(\\.[0-9]+){1,3}$");
             };
             fromToolVersions = mkOption {
               description = "Read versions.{language} from an ASDF-compatible .tools-version file at the indicated path";
@@ -85,11 +85,13 @@ in {
           inherit pkgs;
           elixirVersion = beam-flakes-lib.normalizeElixir cfg.versions.elixir;
           erlangVersion = cfg.versions.erlang;
-          elixirLanguageServer = true;
-          erlangLanguageServer = true;
+          elixirLanguageServer = cfg.devShell.languageServers.elixir;
+          erlangLanguageServer = cfg.devShell.languageServers.erlang;
         };
       in {
-        inherit (pkgset) elixir erlang elixir-ls erlang-ls;
+        inherit (pkgset) elixir erlang;
+        elixir-ls = pkgset.elixir-ls or null;
+        erlang-ls = pkgset.erlang-ls or null;
       });
     };
   };

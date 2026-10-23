@@ -5,7 +5,7 @@
 ### Default Template
 
 ```bash
-nix flake init -t github:shanesveller/nix-beam-flakes#default
+nix flake init -t github:cigrainger/nix-beam-flakes/develop#default
 ```
 
 Current `flake.nix` content for this template is as follows:
@@ -17,7 +17,7 @@ Current `flake.nix` content for this template is as follows:
 ### Phoenix Template
 
 ```bash
-nix flake init -t github:shanesveller/nix-beam-flakes#phoenix
+nix flake init -t github:cigrainger/nix-beam-flakes/develop#phoenix
 ```
 
 At the time of writing there is no meaningful distinction between this template
@@ -41,11 +41,11 @@ A complete example:
 {
   inputs = {
     # required
-    beam-flakes.url = "github:shanesveller/nix-beam-flakes";
+    beam-flakes.url = "github:cigrainger/nix-beam-flakes/develop";
     flake-parts.url = "github:hercules-ci/flake-parts";
     # suggested
     beam-flakes.inputs.flake-parts.follows = "flake-parts";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
   };
 
   outputs = inputs @ { beam-flakes, flake-parts, ... }:
@@ -85,15 +85,15 @@ flake-parts.lib.mkFlake {inherit inputs;} {
   perSystem = _: {
     beamWorkspace = {
       versions = {
-        elixir = "1.14.2";
-        erlang = "25.2";
+        elixir = "1.20.1";
+        erlang = "29.0.2";
       };
     };
   };
 };
 ```
 
-For `elixir`, you can also use an `asdf`-compatible string, such as `"1.14.2-otp-25"`.
+For `elixir`, you can also use an `asdf`-compatible string, such as `"1.20.1-otp-29"`.
 Everything after the first hyphen is stripped and handled according to the defined
 `erlang` version instead.
 
@@ -106,9 +106,9 @@ For projects that formerly, or concurrently, use
 This approach is mutually exclusive with the syntax [described above](#explicitly).
 
 ```
-# .toolversions
-elixir 1.16.2
-erlang 26.2.3
+# .tool-versions
+elixir 1.20.1
+erlang 29.0.2
 ```
 
 ```nix

@@ -1,60 +1,59 @@
-name: "Cache"
+name: Cache
 on:
-  pull_request:
   push:
-    branches:
-      - "develop"
-      - "feature/ci"
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.ref }}-cache
   cancel-in-progress: true
 
 jobs:
-  # idea credit: https://github.com/nix-community/nix-github-actions/blob/bfeb681177b5128d061ebbef7ded30bc21a3f135/.github/workflows/detsys-nix-installer-action.yml
-  matrix:
-    name: Calculate recent-versions matrix
-    runs-on: ubuntu-latest
-    outputs:
-      calculated: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v9
-        with:
-          diagnostic-endpoint: ""
-      - name: Set Matrix
-        id: set-matrix
-        run: |
-          set -eux -o pipefail
-          echo "matrix=$(nix eval --json '.#lib.recentMatrix')" >> "$GITHUB_OUTPUT"
-
   packages:
-    name: Cache ${{ matrix.elixir }} on OTP ${{ matrix.erlang }} (${{ matrix.os }})
-    needs: matrix
-    runs-on: ${{ matrix.os }}
+    name: Publish approved BEAM pair (${{ matrix.system }})
+    # Publishing is opt-in to the fork owner's existing cache. No foreign cache
+    # is trusted, and PRs cannot publish with repository credentials.
+    if: github.ref == 'refs/heads/develop' && vars.CACHIX_CACHE_NAME != ''
     strategy:
-      matrix: ${{ fromJSON(needs.matrix.outputs.calculated) }}
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-26
+            arch: arm64
+            system: aarch64-darwin
+          - os: ubuntu-latest
+            arch: x86_64
+            system: x86_64-linux
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v9
+      - name: Check publishing credentials
+        id: credentials
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+        run: |
+          if [ -n "$CACHIX_AUTH_TOKEN" ]; then
+            echo 'configured=true' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.credentials.outputs.configured == 'true'
+      - name: Assert runner architecture
+        if: steps.credentials.outputs.configured == 'true'
+        run: test "$(uname -m)" = '${{ matrix.arch }}'
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # 31.11.3
+        if: steps.credentials.outputs.configured == 'true'
+      - name: Assert Nix platform
+        if: steps.credentials.outputs.configured == 'true'
+        run: test "$(nix eval --impure --raw --expr builtins.currentSystem)" = '${{ matrix.system }}'
+      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
+        if: steps.credentials.outputs.configured == 'true'
         with:
-          diagnostic-endpoint: ""
-      - uses: DeterminateSystems/magic-nix-cache-action@v3
-        with:
-          diagnostic-endpoint: ""
-      - uses: cachix/cachix-action@v14
-        if: github.ref == 'refs/heads/develop'
-        with:
-          name: shanesveller-nix-beam-flakes
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-          pathsToPush: "./result"
+          name: ${{ vars.CACHIX_CACHE_NAME }}
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          pathsToPush: ./result
           skipAddingSubstituter: true
-      - run: |
-          printf \
-            "elixir %s\nerlang %s" \
-              ${{ matrix.elixir }} \
-              ${{ matrix.erlang }} \
-            | tee ./dev/example/.tool-versions
-      - run: nix -L build .#example
+      - name: Build approved pair
+        if: steps.credentials.outputs.configured == 'true'
+        run: nix build -L .#packages.${{ matrix.system }}.example

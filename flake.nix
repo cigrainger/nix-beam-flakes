@@ -3,7 +3,7 @@
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
   };
 
   outputs = inputs @ {flake-parts, ...}:
@@ -11,12 +11,12 @@
       imports = [./parts/all-parts.nix ./local-parts];
       systems = ["aarch64-darwin" "x86_64-darwin" "x86_64-linux"];
 
+      perSystem = {pkgs, ...}: {
+        formatter = pkgs.alejandra;
+      };
+
       flake = {
         flakeModule = ./parts/all-parts.nix;
-
-        perSystem = {pkgs, ...}: {
-          formatter = pkgs.alejandra;
-        };
 
         templates = {
           default = {
@@ -26,7 +26,7 @@
 
           phoenix = {
             path = ./templates/phoenix;
-            description = "An environment suitable for developing Phoenix 1.7 applications";
+            description = "An environment suitable for developing Phoenix applications";
           };
         };
       };

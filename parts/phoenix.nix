@@ -27,10 +27,14 @@ in {
   };
 
   config = {
-    perSystem = {pkgs, ...}: {
+    perSystem = {
+      config,
+      pkgs,
+      ...
+    }: {
       beamWorkspace.devShell.packages = mkMerge [
-        (mkIf pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [CoreServices]))
-        (mkIf pkgs.stdenv.isLinux [pkgs.inotify-tools])
+        # Darwin frameworks come from stdenv's SDK; legacy apple_sdk was removed.
+        (mkIf (config.beamWorkspace.devShell.phoenix && pkgs.stdenv.isLinux) [pkgs.inotify-tools])
       ];
     };
   };

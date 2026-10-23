@@ -4,16 +4,13 @@ Immediate concerns:
 
 - [ ] Significant documentation efforts inspired by the `flake-parts` website
 - [x] CI that the modules continue to evaluate successfully with common scenarios
-- [x] A binary cache for the latest pairing of Erlang/Elixir for MacOS/Linux
+- [ ] Credential-gated publishing to an explicitly configured existing cache
 - [ ] More robust specialty support for Phoenix projects
 
 Later on:
 
-- Expose/enforce the compatibility-check logic that honors [Elixir's
-  compatibility
-  policy](https://hexdocs.pm/elixir/compatibility-and-deprecations.html) so
-  flake users get immediate feedback when they've chosen an unsupported
-  combination
+- [x] Enforce [Elixir's compatibility policy](https://hexdocs.pm/elixir/compatibility-and-deprecations.html)
+  when selecting a package set
 - Phoenix speciality support
   - `esbuild` binaries
   - `tailwind` binaries
