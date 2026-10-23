@@ -83,11 +83,22 @@
 
   mkErlang = pkgs: version: hash: let
     basePkg = otpBasePackage pkgs version;
+    stdenv = buildStdenv pkgs;
+    wxWidgets = lib.findFirst (pkg: lib.hasPrefix "wxwidgets" (pkg.pname or "")) null (basePkg.buildInputs or []);
+    # Cached wx-config retains its own older shebang. Invoke it with the fixed
+    # build shell as well, without rebuilding wxWidgets or changing its output.
+    wxConfig = pkgs.writeScript "wx-config" ''
+      #!${stdenv.shell}
+      exec ${stdenv.shell} ${wxWidgets}/bin/wx-config "$@"
+    '';
   in
     if basePkg != null
     then
-      (basePkg.override {stdenv = buildStdenv pkgs;}).overrideAttrs {
+      (basePkg.override {inherit stdenv;}).overrideAttrs (old: {
         inherit version;
+        configureFlags =
+          (old.configureFlags or [])
+          ++ lib.optional (stdenv.shell != pkgs.stdenv.shell && wxWidgets != null) "--with-wx-config=${wxConfig}";
 
         src = pkgs.fetchFromGitHub {
           owner = "erlang";
@@ -95,7 +106,7 @@
           tag = "OTP-${version}";
           inherit hash;
         };
-      }
+      })
     else null;
 
   mkPackageSet = {

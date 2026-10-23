@@ -300,7 +300,9 @@ On Darwin with an older build shell, custom BEAM builds use the pinned Bash
 5.3p20 package in `lib/buildStdenv.nix`. GNU patch 016 fixes a macOS dynamic-pipe
 heredoc deadlock reproducible under load. The workaround changes only these
 builds' stdenv and leaves dependency toolchains and consumers' package sets alone.
-The generated BEAM script shebangs also use this noninteractive shell. Newer
+A configure wrapper also runs cached wxWidgets' `wx-config` with that shell,
+retaining the base builder's selected wxWidgets libraries. The generated BEAM
+script shebangs also use this noninteractive shell. Newer
 build shells use the caller's stdenv directly.
 
 The optional Erlang language-server setting uses ELP when available. Stable
