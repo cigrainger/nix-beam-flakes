@@ -1,0 +1,4 @@
+# Approved runtime; first entry wins among fallback versions
+	 elixir	 1.20.1-otp-29  1.20.0 # compiled from source here
+  erlang   29.0.2	# exact OTP patch
+

@@ -1,10 +1,11 @@
-name: "Test"
+name: Test
 on:
   pull_request:
   push:
-    branches:
-      - "develop"
-      - "feature/ci"
+    branches: [develop]
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.ref }}-test
@@ -12,41 +13,28 @@ concurrency:
 
 jobs:
   checks:
-    name: Flake Checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v9
-        with:
-          diagnostic-endpoint: ""
-      - name: Enable Nix Store Caching
-        uses: DeterminateSystems/magic-nix-cache-action@v3
-        with:
-          diagnostic-endpoint: ""
-      - run: nix -L flake check --all-systems
-      - run: nix -L flake check ./dev --all-systems
-
-  packages:
-    name: Build Packages
+    name: BEAM checks (${{ matrix.system }})
     strategy:
+      fail-fast: false
       matrix:
-        os: [macos-14, ubuntu-latest]
+        include:
+          - os: macos-26
+            arch: arm64
+            system: aarch64-darwin
+          - os: ubuntu-latest
+            arch: x86_64
+            system: x86_64-linux
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v9
-        with:
-          diagnostic-endpoint: ""
-      - uses: DeterminateSystems/magic-nix-cache-action@v3
-        with:
-          diagnostic-endpoint: ""
-      - uses: cachix/cachix-action@v14
-        if: github.ref == 'refs/heads/develop'
-        with:
-          name: shanesveller-nix-beam-flakes
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-          pathsToPush: "./result"
-          skipAddingSubstituter: true
-      - run: nix -L build .#all
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Assert runner architecture
+        run: test "$(uname -m)" = '${{ matrix.arch }}'
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # 31.11.3
+      - name: Assert Nix platform
+        run: test "$(nix eval --impure --raw --expr builtins.currentSystem)" = '${{ matrix.system }}'
+      - name: Evaluate native regressions and run the approved runtime
+        run: |
+          nix build -L --no-link \
+            .#checks.${{ matrix.system }}.regression \
+            .#checks.${{ matrix.system }}.devshell-interface \
+            .#checks.${{ matrix.system }}.approved-runtime

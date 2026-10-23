@@ -5,7 +5,7 @@
     beam-flakes.url = "path:./../..";
     beam-flakes.inputs.flake-parts.follows = "flake-parts";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
   };
 
   outputs = inputs @ {
@@ -25,8 +25,8 @@
           devShell.languageServers.erlang = false;
           flakePackages = true;
           versions = {
-            elixir = "1.16.2-otp-26";
-            erlang = "26.2.3";
+            elixir = "1.20.1-otp-29";
+            erlang = "29.0.2";
           };
           # versions.fromToolVersions = ./.tool-versions;
         };

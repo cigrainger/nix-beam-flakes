@@ -40,8 +40,8 @@
 
 - Automatic packaging for ~any finalized, tagged release of both Erlang/OTP and
   Elixir
-  - Package definitions are based on upstream `nixpkgs` definitions with `src`
-    overrides
+  - Package definitions are based on upstream `nixpkgs` definitions with source
+    and version overrides, where that Nixpkgs release still has a builder
   - Packages will be added to your own flake's outputs, and can be consumed by
     other Nix code
 - Declarative, automatic `devShell` creation using these packages (with opt-out)
@@ -58,13 +58,13 @@ Want to start a new Phoenix project? Don't have a global install of Elixir/Mix?
 This can help. Pairs well with flake templates below.
 
 ```shell
-nix run github:shanesveller/nix-beam-flakes#phx_new -- --help
+nix run github:cigrainger/nix-beam-flakes/develop#phx_new -- --help
 ```
 
 #### livebook
 
 ```shell
-nix run github:shanesveller/nix-beam-flakes#livebook -- server
+nix run github:cigrainger/nix-beam-flakes/develop#livebook -- server
 ```
 
 ## Usage
@@ -72,9 +72,9 @@ nix run github:shanesveller/nix-beam-flakes#livebook -- server
 ### Via Flake Template
 
 ```shell
-nix flake init -t github:shanesveller/nix-beam-flakes#default
+nix flake init -t github:cigrainger/nix-beam-flakes/develop#default
 # or
-nix flake init -t github:shanesveller/nix-beam-flakes#phoenix
+nix flake init -t github:cigrainger/nix-beam-flakes/develop#phoenix
 ```
 
 At the time of writing there is no meaningful distinction between the two, but
@@ -93,10 +93,10 @@ A complete example:
   description = "My Elixir application";
 
   inputs = {
-    beam-flakes.url = "github:shanesveller/nix-beam-flakes";
+    beam-flakes.url = "github:cigrainger/nix-beam-flakes/develop";
     beam-flakes.inputs.flake-parts.follows = "flake-parts";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
   };
 
   outputs = {
@@ -115,8 +115,8 @@ A complete example:
           enable = true;
           devShell.languageServers.elixir = true;
           versions = {
-            elixir = "1.16.2";
-            erlang = "26.2.3";
+            elixir = "1.20.1";
+            erlang = "29.0.2";
           };
         };
       };
@@ -144,8 +144,8 @@ setting `perSystem.beamWorkspace.devShell.enable = false;`
             #
             # Everything after the first hyphen is stripped and handled according
             # to the defined erlang version instead.
-            elixir = "1.16.2";
-            erlang = "26.2.3";
+            elixir = "1.20.1";
+            erlang = "29.0.2";
           };
         };
       };
@@ -165,7 +165,7 @@ For projects that formerly, or concurrently, use
         beamWorkspace = {
           enable = true;
           versions = {
-            fromToolVersioons = ./.tool-versions;
+            fromToolVersions = ./.tool-versions;
           };
         };
       };
@@ -178,16 +178,13 @@ Immediate concerns:
 
 - [ ] Significant documentation efforts inspired by the `flake-parts` website
 - [x] CI that the modules continue to evaluate successfully with common scenarios
-- [x] A binary cache for the latest pairing of Erlang/Elixir for MacOS/Linux
+- [ ] Credential-gated publishing to an explicitly configured existing cache
 - [ ] More robust specialty support for Phoenix projects
 
 Later on:
 
-- Expose/enforce the compatibility-check logic that honors [Elixir's
-  compatibility
-  policy](https://hexdocs.pm/elixir/compatibility-and-deprecations.html) so
-  flake users get immediate feedback when they've chosen an unsupported
-  combination
+- [x] Enforce [Elixir's compatibility policy](https://hexdocs.pm/elixir/compatibility-and-deprecations.html)
+  when selecting a package set
 - Phoenix speciality support
   - `esbuild` binaries
   - `tailwind` binaries
@@ -212,8 +209,8 @@ If you are a Nix user, this is already automated:
 
 ```shell
 nix develop ./dev
-just add-elixir 1.16.2
-just add-erlang 26.2.3
+just add-elixir 1.20.1
+just add-erlang 29.0.2
 ```
 
 Just PR the changes to `data` that it committed for you. I'll probably be on top
@@ -242,3 +239,74 @@ repository as well as learned a lot from studying its code.
 
 I also take some inspiration from
 [`oxalica/rust-overlay`](https://github.com/oxalica/rust-overlay).
+
+## Current toolchain checks
+
+This is Chris Grainger's fork, `cigrainger/nix-beam-flakes`, on `develop`.
+The BEAM packaging changes and release checksums are adapted from
+[elixir-tools/nix-beam-flakes at 949f26e](https://github.com/elixir-tools/nix-beam-flakes/commit/949f26e7ad5a85e29d4e0d79649c82b0f399562f)
+under the preserved Apache-2.0 license. See [credits](docs/credits.md).
+
+CI targets `aarch64-darwin` (the arm64 `macos-26` runner) and `x86_64-linux`,
+and asserts both runner architecture and Nix platform. Each PR evaluates native
+regressions and builds/runs the exact approved Elixir `1.20.1-otp-29` / OTP
+`29.0.2` pair. This intentionally retained application baseline is separate from
+latest stable releases. Historical checksums are an inventory, not a promise
+that current Nixpkgs still provides every historical builder. Enumeration skips
+removed builders; explicit requests report an error when a builder is absent.
+
+Run the checks on each native host (substitute `x86_64-linux` on Linux):
+
+```sh
+nix build -L .#checks.aarch64-darwin.regression .#checks.aarch64-darwin.devshell-interface .#checks.aarch64-darwin.approved-runtime
+```
+
+Direct consumers can use the same exact pair without flake-parts:
+
+```nix
+beam-flakes.lib.mkPackageSet {
+  inherit pkgs;
+  elixirVersion = "1.20.1-otp-29";
+  erlangVersion = "29.0.2";
+}
+```
+
+`packageSetFromToolVersions pkgs ./.tool-versions {}` also works. Both helpers
+and `beamWorkspace.versions.fromToolVersions` strip the optional Elixir OTP
+suffix, use the explicitly selected Erlang version, and preserve requested
+source and package version metadata. The parser accepts tabs, repeated spaces,
+CRLF and comments; it selects the first version on a line and rejects entries
+without a version. `mkElixir` now takes `pkgs: beamPkgs: version: hash`, matching
+the upstream source override API.
+
+The default Nixpkgs input tracks stable `nixos-26.05`. Its legacy extensible
+BEAM sets use `packagesWith` and `extend`; newer Nixpkgs inputs use
+`overrideScope`, including releases where `packagesWith` has been removed.
+Both paths bind Elixir to the requested OTP rather than the Nixpkgs default.
+
+Compatibility bounds follow the
+[stable Elixir 1.20.4 table](https://github.com/elixir-lang/elixir/blob/v1.20.4/lib/elixir/pages/references/compatibility-and-deprecations.md):
+Elixir 1.20 supports OTP 27–29, 1.19 supports 26–28, 1.17/1.18 support 25–27,
+and 1.15/1.16 support 24–26. Patch-level compatibility additions in older
+releases are also respected. New Elixir minor releases require a reviewed bound.
+
+Cache publishing only runs on `develop` when an existing cache is explicitly
+configured via `CACHIX_CACHE_NAME` and `CACHIX_AUTH_TOKEN` credentials are present.
+It adds no substituter or trusted key. There is no claim that the approved pair
+is available from a binary cache. PR checks do not publish. Livebook and Phoenix
+application builds remain outside this bounded BEAM check matrix.
+
+On Darwin with an older build shell, custom BEAM builds use the pinned Bash
+5.3p20 package in `lib/buildStdenv.nix`. GNU patch 016 fixes a macOS dynamic-pipe
+heredoc deadlock reproducible under load. The workaround changes only these
+builds' stdenv and leaves dependency toolchains and consumers' package sets alone.
+A configure wrapper also runs cached wxWidgets' `wx-config` with that shell,
+retaining the base builder's selected wxWidgets libraries. The generated BEAM
+script shebangs also use this noninteractive shell. Newer
+build shells use the caller's stdenv directly.
+
+The optional Erlang language-server setting uses ELP when available. Stable
+Nixpkgs' prebuilt ELP supports OTP 28 but not OTP 29; unsupported requests fail
+with a diagnostic rather than silently using another OTP.
+`devshell-interface` checks shell and editor derivation evaluation; it does not
+build or exercise editor servers.

@@ -19,7 +19,7 @@
   in {
     devShells.asdf = let
       pkgSet = self.lib.packageSetFromToolVersions pkgs ../dev/example/.tool-versions {
-        elixirLanguageServer = true;
+        elixirLanguageServer = false;
       };
     in
       mkBeamShell pkgSet;
@@ -27,9 +27,9 @@
     devShells.example = let
       pkgSet = self.lib.mkPackageSet {
         inherit pkgs;
-        elixirVersion = "1.16.2";
-        erlangVersion = "26.2.3";
-        elixirLanguageServer = true;
+        elixirVersion = "1.20.1";
+        erlangVersion = "29.0.2";
+        elixirLanguageServer = false;
       };
     in
       mkBeamShell pkgSet;
